@@ -1,0 +1,6 @@
+{
+  "name": "Dreame A2 Mower",
+  "content_in_root": false,
+  "render_readme": true,
+  "homeassistant": "2024.12.0"
+}

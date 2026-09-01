@@ -1,0 +1,11 @@
+{
+  "domain": "dreame_a2",
+  "name": "Dreame A2 Mower",
+  "codeowners": ["@hutchYy"],
+  "config_flow": true,
+  "documentation": "https://github.com/hutchYy/dreame-a2-hacs",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/hutchYy/dreame-a2-hacs/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}

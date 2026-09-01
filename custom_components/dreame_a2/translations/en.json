@@ -1,0 +1,91 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Dreame A2 Mower",
+        "description": "Sign in with your Dreame Smartlife account.",
+        "data": {
+          "email": "Email",
+          "password": "Password",
+          "region": "Region"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Invalid email or password.",
+      "cannot_connect": "Could not reach the Dreame cloud. Try again."
+    },
+    "abort": {
+      "already_configured": "This mower is already configured."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "battery": { "name": "Battery" },
+      "state": {
+        "name": "State",
+        "state": {
+          "mowing": "Mowing",
+          "paused": "Paused",
+          "returning": "Returning to dock",
+          "error": "Error",
+          "charging": "Charging",
+          "docked": "Docked"
+        }
+      },
+      "area_mowed": { "name": "Area mowed" },
+      "area_total": { "name": "Area total" },
+      "session_time": { "name": "Session time" }
+    },
+    "binary_sensor": {
+      "online": { "name": "Online" },
+      "problem": { "name": "Problem" },
+      "charging": { "name": "Charging" }
+    },
+    "switch": {
+      "edge_auto": { "name": "Automatic edge mowing" },
+      "edge_safe": { "name": "Safe edge mowing" },
+      "edgemaster": { "name": "EdgeMaster" },
+      "edge_obstacle_avoidance": { "name": "Edge obstacle avoidance" },
+      "lidar_obstacle": { "name": "LiDAR obstacle recognition" },
+      "efficient_mode": { "name": "Efficient mode" },
+      "frost_protect": { "name": "Frost protection" },
+      "weather_adapt": { "name": "Weather adaptation" },
+      "pathway_avoidance": { "name": "Pathway obstacle avoidance" },
+      "child_lock": { "name": "Child lock" },
+      "daytime_lights": { "name": "Daytime lights" },
+      "auto_recharge_standby": { "name": "Auto recharge after standby" },
+      "ai_photos": { "name": "AI obstacle photos" }
+    },
+    "number": {
+      "cut_height": { "name": "Cutting height" },
+      "obstacle_height": { "name": "Min obstacle height" },
+      "obstacle_distance": { "name": "Obstacle keep-distance" },
+      "volume": { "name": "Volume" }
+    },
+    "select": {
+      "cutting_pattern": {
+        "name": "Cutting pattern",
+        "state": {
+          "off": "Off",
+          "crisscross": "Crisscross",
+          "chequerboard": "Chequerboard"
+        }
+      },
+      "navigation_path": {
+        "name": "Navigation path",
+        "state": { "direct": "Direct", "smart": "Smart" }
+      },
+      "active_map": { "name": "Active map" }
+    },
+    "button": {
+      "find_robot": { "name": "Find robot" },
+      "edge_mow": { "name": "Mow edges" },
+      "stop": { "name": "Stop" },
+      "refresh_map": { "name": "Refresh map" }
+    },
+    "camera": {
+      "map": { "name": "Map" }
+    }
+  }
+}

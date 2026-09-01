@@ -1,0 +1,132 @@
+# Dreame A2 — Lovelace dashboard (built-in cards only, no custom cards).
+#
+# HOW TO USE
+#   Settings → Dashboards → (open one) → ⋮ → Edit → ⋮ → "Raw configuration
+#   editor", then paste ONE of the `views:` entries below, OR paste the whole
+#   file as a new dashboard.
+#
+# IMPORTANT: entity IDs are built from your mower's device name. This template
+# assumes the prefix `a2_1200` (e.g. `lawn_mower.a2_1200`). Replace `a2_1200`
+# with your prefix — check Developer Tools → States and filter for your mower.
+
+title: Mower
+views:
+  - title: Lawn
+    type: sections
+    max_columns: 2
+    sections:
+      # ── Map + primary controls ──────────────────────────────────────────
+      - type: grid
+        cards:
+          - type: picture-entity
+            entity: camera.a2_1200_map
+            name: Lawn map
+            camera_view: auto
+            show_state: false
+            show_name: true
+
+          - type: tile
+            entity: lawn_mower.a2_1200
+            name: Mower
+            features:
+              - type: lawn-mower-commands
+                commands:
+                  - start_pause
+                  - dock
+
+          - type: horizontal-stack
+            cards:
+              - type: tile
+                entity: sensor.a2_1200_battery
+                name: Battery
+              - type: tile
+                entity: sensor.a2_1200_state
+                name: State
+
+          - type: horizontal-stack
+            cards:
+              - type: tile
+                entity: button.a2_1200_find_robot
+                name: Find
+                tap_action: { action: toggle }
+              - type: tile
+                entity: button.a2_1200_mow_edges
+                name: Edges
+              - type: tile
+                entity: button.a2_1200_stop
+                name: Stop
+              - type: tile
+                entity: button.a2_1200_refresh_map
+                name: Refresh
+
+          - type: entities
+            title: This session
+            entities:
+              - entity: sensor.a2_1200_area_mowed
+                name: Area mowed
+              - entity: sensor.a2_1200_area_total
+                name: Area total
+              - entity: sensor.a2_1200_session_time
+                name: Session time
+              - entity: binary_sensor.a2_1200_online
+                name: Online
+              - entity: binary_sensor.a2_1200_charging
+                name: Charging
+              - entity: binary_sensor.a2_1200_problem
+                name: Problem
+
+      # ── Mowing + device settings ────────────────────────────────────────
+      - type: grid
+        cards:
+          - type: entities
+            title: Mowing
+            entities:
+              - entity: select.a2_1200_active_map
+                name: Active map
+              - entity: number.a2_1200_cutting_height
+                name: Cutting height
+              - entity: select.a2_1200_cutting_pattern
+                name: Cutting pattern
+              - entity: switch.a2_1200_efficient_mode
+                name: Efficient mode
+              - type: divider
+              - entity: switch.a2_1200_automatic_edge_mowing
+                name: Automatic edge mowing
+              - entity: switch.a2_1200_safe_edge_mowing
+                name: Safe edge mowing
+              - entity: switch.a2_1200_edgemaster
+                name: EdgeMaster
+
+          - type: entities
+            title: Obstacle avoidance
+            entities:
+              - entity: switch.a2_1200_lidar_obstacle_recognition
+                name: LiDAR recognition
+              - entity: switch.a2_1200_edge_obstacle_avoidance
+                name: Edge obstacle avoidance
+              - entity: number.a2_1200_min_obstacle_height
+                name: Min obstacle height
+              - entity: number.a2_1200_obstacle_keep_distance
+                name: Keep-distance
+              - entity: switch.a2_1200_ai_obstacle_photos
+                name: AI obstacle photos
+              - entity: select.a2_1200_navigation_path
+                name: Navigation path
+
+          - type: entities
+            title: Device
+            entities:
+              - entity: number.a2_1200_volume
+                name: Volume
+              - entity: switch.a2_1200_frost_protection
+                name: Frost protection
+              - entity: switch.a2_1200_weather_adaptation
+                name: Weather adaptation
+              - entity: switch.a2_1200_pathway_obstacle_avoidance
+                name: Pathway obstacle avoidance
+              - entity: switch.a2_1200_child_lock
+                name: Child lock
+              - entity: switch.a2_1200_daytime_lights
+                name: Daytime lights
+              - entity: switch.a2_1200_auto_recharge_after_standby
+                name: Auto recharge after standby
