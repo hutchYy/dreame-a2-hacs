@@ -147,13 +147,21 @@ def _render(map_data: dict, dock, pose, trail=None) -> bytes | None:
         d.rectangle([x - 9, y - 6, x + 9, y + 6], fill=DOCK_COLOR + (255,))
         d.text((x, y - 16), "DOCK", fill=DOCK_COLOR + (255,), anchor="mm")
 
-    # Robot position: live pose if moving, else fall back to the dock so the
-    # mower is always shown on the map (it's sitting on the dock when idle).
+    # Robot position, best source first:
+    #   1) live REST pose (when the robot reports it),
+    #   2) the end of the mown trail — that's where the robot currently is while
+    #      mowing, so the marker tracks along the trail as it grows,
+    #   3) the dock, when idle.
     rx = ry = None
     ang = 0.0
     if pose and pose.get("x") is not None:
         rx, ry, ang = pose["x"], pose["y"], math.radians(pose.get("angle") or 0)
-    elif dpt and dpt[0] is not None:
+    elif trail:
+        for p in reversed(trail):
+            if not _is_sentinel(p):
+                rx, ry = p[0], p[1]
+                break
+    if rx is None and dpt and dpt[0] is not None:
         rx, ry = dpt
     if rx is not None:
         x, y = sx(rx), sy(ry)

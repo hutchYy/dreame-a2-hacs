@@ -10,7 +10,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .api import DreameApi, DreameError
-from .const import DEFAULT_SCAN_INTERVAL, MAP_REFRESH_INTERVAL, PARAMS_MAP
+from .const import DEFAULT_SCAN_INTERVAL, MAP_REFRESH_INTERVAL, PARAMS_MAP, STATE_MOWING
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -56,9 +56,12 @@ class DreameCoordinator(DataUpdateCoordinator[dict]):
             except DreameError:
                 pass
 
-            # Map geometry is expensive (chunked) — refresh on a slower cadence.
+            # Map geometry is expensive (chunked) — refresh on a slower cadence,
+            # but speed up while mowing so the trail and robot marker advance.
             now = time.time()
-            if self._map is None or (now - self._map_ts) > MAP_REFRESH_INTERVAL:
+            mowing = status.get("state_code") == STATE_MOWING
+            refresh_after = 25 if mowing else MAP_REFRESH_INTERVAL
+            if self._map is None or (now - self._map_ts) > refresh_after:
                 try:
                     self._map = await self.api.fetch_map_data()
                     self._dock = await self.api.get_dock_pos()

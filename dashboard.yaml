@@ -1,5 +1,7 @@
-# Dreame A2 — multi-view dashboard mirroring the web app (Dashboard / Map /
-# Settings / Maintenance). Built-in cards only, no custom cards.
+# Dreame A2 — multi-view dashboard mirroring the web app
+# (Dashboard / Map / Settings / Maintenance / Patrol). Built-in cards only,
+# no custom cards. The map is a rendered image (zones + mown trail + robot +
+# dock) — not a video feed.
 #
 # HOW TO USE
 #   Settings → Dashboards → (open one) → ⋮ → Edit → ⋮ → "Raw configuration
@@ -18,10 +20,29 @@ views:
     type: sections
     max_columns: 2
     sections:
+      # Left column — live map (hero) + this-session stats
       - type: grid
         cards:
-          - type: heading
-            heading: Status
+          - type: picture-entity
+            entity: camera.a2_1200_map
+            name: Lawn
+            camera_view: live
+            show_state: false
+            show_name: false
+            tap_action: { action: none }
+          - type: glance
+            show_name: true
+            columns: 3
+            entities:
+              - entity: sensor.a2_1200_area_mowed
+                name: Mowed
+              - entity: sensor.a2_1200_area_total
+                name: Total
+              - entity: sensor.a2_1200_session_time
+                name: Time
+      # Right column — status, controls, health
+      - type: grid
+        cards:
           - type: tile
             entity: lawn_mower.a2_1200
             name: Mower
@@ -36,45 +57,32 @@ views:
               - type: tile
                 entity: sensor.a2_1200_state
                 name: State
-          - type: horizontal-stack
+          - type: grid
+            columns: 3
+            square: false
             cards:
-              - type: tile
-                entity: button.a2_1200_find_robot
-                name: Find
               - type: tile
                 entity: button.a2_1200_mow_edges
                 name: Edges
+                icon: mdi:vector-square
               - type: tile
                 entity: button.a2_1200_stop
                 name: Stop
-          - type: entities
-            title: This session
+                icon: mdi:stop
+              - type: tile
+                entity: button.a2_1200_find_robot
+                name: Find
+                icon: mdi:map-marker
+          - type: glance
+            title: Health
+            columns: 3
             entities:
-              - entity: sensor.a2_1200_area_mowed
-                name: Area mowed
-              - entity: sensor.a2_1200_area_total
-                name: Area total
-              - entity: sensor.a2_1200_session_time
-                name: Session time
               - entity: binary_sensor.a2_1200_online
                 name: Online
               - entity: binary_sensor.a2_1200_charging
                 name: Charging
               - entity: binary_sensor.a2_1200_problem
                 name: Problem
-      - type: grid
-        cards:
-          - type: heading
-            heading: Live map
-          - type: picture-entity
-            entity: camera.a2_1200_map
-            name: Lawn
-            camera_view: live
-            show_state: false
-            show_name: false
-          - type: tile
-            entity: button.a2_1200_refresh_map
-            name: Refresh map
 
   # ── MAP ───────────────────────────────────────────────────────────────────
   - title: Map
