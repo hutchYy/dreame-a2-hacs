@@ -32,6 +32,7 @@ class DreameCoordinator(DataUpdateCoordinator[dict]):
         self._dock = None
         self._pose = None
         self._trail: list | None = None
+        self._history: list | None = None
 
     async def _async_update_data(self) -> dict:
         try:
@@ -64,6 +65,7 @@ class DreameCoordinator(DataUpdateCoordinator[dict]):
                     # The mown path (MITRC). Bounded chunk count keeps the
                     # serialized command queue from stalling on huge lawns.
                     self._trail = await self.api.fetch_mowing_trail(max_chunks=200)
+                    self._history = await self.api.get_history()
                     self._map_ts = now
                 except DreameError as err:
                     _LOGGER.debug("Map refresh failed: %s", err)
@@ -80,6 +82,7 @@ class DreameCoordinator(DataUpdateCoordinator[dict]):
                 "dock": self._dock,
                 "pose": self._pose,
                 "trail": self._trail,
+                "history": self._history,
             }
         except DreameError as err:
             raise UpdateFailed(str(err)) from err

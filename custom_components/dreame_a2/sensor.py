@@ -35,6 +35,47 @@ def _since(data: dict):
 @dataclass(frozen=True, kw_only=True)
 class DreameSensorDescription(SensorEntityDescription):
     value_fn: Callable[[dict], object]
+    attrs_fn: Callable[[dict], dict] | None = None
+
+
+def _last_mow(data: dict):
+    hist = data.get("history") or []
+    if not hist:
+        return None
+    ts = hist[0].get("timestamp")
+    return datetime.fromtimestamp(ts, tz=timezone.utc) if ts else None
+
+
+def _last_mow_attrs(data: dict) -> dict:
+    hist = data.get("history") or []
+    if not hist:
+        return {}
+    last = hist[0]
+    return {
+        "last_area_m2": last.get("area"),
+        "last_duration_min": last.get("duration"),
+        "last_battery": last.get("battery"),
+        "recent_sessions": [
+            {"area_m2": h.get("area"), "duration_min": h.get("duration")}
+            for h in hist[:10]
+        ],
+    }
+
+
+def _zones(data: dict):
+    zones = [z for z in ((data.get("map") or {}).get("map") or []) if z.get("type") == 0]
+    return len(zones) if data.get("map") else None
+
+
+def _zones_attrs(data: dict) -> dict:
+    zones = [z for z in ((data.get("map") or {}).get("map") or []) if z.get("type") == 0]
+    return {
+        "zones": [
+            {"id": z.get("id"), "name": z.get("name") or f"Zone {z.get('id')}",
+             "area_m2": round(z["area"]) if z.get("area") else None}
+            for z in zones
+        ]
+    }
 
 
 SENSORS: tuple[DreameSensorDescription, ...] = (
@@ -104,6 +145,15 @@ SENSORS: tuple[DreameSensorDescription, ...] = (
         native_unit_of_measurement=PERCENTAGE, state_class=SensorStateClass.MEASUREMENT,
         value_fn=lambda d: _consumable_pct(d, 2, CONSUMABLE_MAX["maintenance"]),
     ),
+    DreameSensorDescription(
+        key="last_mow", translation_key="last_mow",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        value_fn=_last_mow, attrs_fn=_last_mow_attrs,
+    ),
+    DreameSensorDescription(
+        key="zones", translation_key="zones",
+        value_fn=_zones, attrs_fn=_zones_attrs,
+    ),
 )
 
 
@@ -124,3 +174,9 @@ class DreameSensor(DreameEntity, SensorEntity):
     @property
     def native_value(self):
         return self.entity_description.value_fn(self.coordinator.data or {})
+
+    @property
+    def extra_state_attributes(self) -> dict | None:
+        if self.entity_description.attrs_fn is None:
+            return None
+        return self.entity_description.attrs_fn(self.coordinator.data or {})

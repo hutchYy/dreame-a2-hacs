@@ -105,6 +105,20 @@ views:
               Green = lawn zone · **Yellow = mown path** · Red dot = mower
               (sits on the dock when idle, follows live position while mowing) ·
               Cyan = dock.
+          - type: entities
+            title: Zones on active map
+            entities:
+              - entity: sensor.a2_1200_zones
+                name: Zone count
+          - type: markdown
+            content: |
+              **Zones (from the Zones sensor):**
+              {% for z in state_attr('sensor.a2_1200_zones','zones') or [] %}
+              - {{ z.name }} (id `{{ z.id }}`){% if z.area_m2 %} — {{ z.area_m2 }} m²{% endif %}
+              {% endfor %}
+
+              Mow specific zones: **Developer Tools → Actions →**
+              `lawn_mower.mow_zones` targeting your mower, with `zones: [0, 2]`.
 
   # ── SETTINGS ───────────────────────────────────────────────────────────────
   - title: Settings
@@ -221,9 +235,67 @@ views:
             entities:
               - entity: sensor.a2_1200_in_service_since
                 name: In service since
+              - entity: sensor.a2_1200_last_mow
+                name: Last mow
+          - type: markdown
+            content: |
+              **Recent sessions**
+              {% for s in state_attr('sensor.a2_1200_last_mow','recent_sessions') or [] %}
+              - {{ s.area_m2 }} m² · {{ s.duration_min }} min
+              {% endfor %}
           - type: history-graph
             title: Battery (7 days)
             hours_to_show: 168
             entities:
               - entity: sensor.a2_1200_battery
                 name: Battery
+
+  # ── PATROL ────────────────────────────────────────────────────────────────
+  - title: Patrol
+    path: patrol
+    icon: mdi:security
+    type: sections
+    max_columns: 2
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: Patrol
+          - type: picture-entity
+            entity: camera.a2_1200_map
+            name: Map
+            camera_view: live
+            show_state: false
+            show_name: false
+          - type: markdown
+            content: |
+              Patrol sends the mower to cruise (with the camera) — either along
+              the **edges of chosen zones** or to a **single point**.
+
+              **Zones available:**
+              {% for z in state_attr('sensor.a2_1200_zones','zones') or [] %}
+              - {{ z.name }} (id `{{ z.id }}`)
+              {% endfor %}
+      - type: grid
+        cards:
+          - type: heading
+            heading: Run a patrol
+          - type: markdown
+            content: >
+              **Edge patrol** — Developer Tools → Actions →
+              `lawn_mower.patrol_zone_edges`, target your mower, `zones: [0]`.
+
+
+              **Point patrol** — `lawn_mower.patrol_point`, target your mower,
+              `x: <n>`, `y: <n>` (map units; see the mower position on the map).
+
+
+              Tip: wrap either action in a **Script** or **Button** helper to get
+              a one-tap patrol button on this dashboard.
+          - type: entities
+            title: Controls
+            entities:
+              - entity: button.a2_1200_stop
+                name: Stop patrol
+              - entity: button.a2_1200_find_robot
+                name: Find robot

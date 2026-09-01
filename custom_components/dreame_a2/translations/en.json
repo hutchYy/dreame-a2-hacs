@@ -42,7 +42,9 @@
       "in_service_since": { "name": "In service since" },
       "blade_life": { "name": "Blade life remaining" },
       "brush_life": { "name": "Side brush life remaining" },
-      "maintenance_life": { "name": "Maintenance life remaining" }
+      "maintenance_life": { "name": "Maintenance life remaining" },
+      "last_mow": { "name": "Last mow" },
+      "zones": { "name": "Zones" }
     },
     "binary_sensor": {
       "online": { "name": "Online" },

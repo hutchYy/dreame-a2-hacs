@@ -336,6 +336,46 @@ class DreameApi:
     async def zone_mowing(self, region: list[int]) -> Any:
         return await self.send_command(2, 50, params=[{"m": "a", "p": 0, "o": 102, "d": {"region": region}}])
 
+    async def spot_mowing(self, area: list) -> Any:
+        return await self.send_command(2, 50, params=[{"m": "a", "p": 0, "o": 103, "d": {"area": area}}])
+
+    # ── patrol (cruise) ───────────────────────────────────────────────────
+    async def cruise_edge(self, edge: list[list[int]]) -> Any:
+        """Patrol along an edge path (o=108). `edge` is a list of [x, y] points."""
+        return await self.send_command(2, 50, params=[{"m": "a", "p": 0, "o": 108, "d": {"edge": edge}}])
+
+    async def cruise_point(self, point: list[int]) -> Any:
+        """Patrol to a single point (o=107). `point` is [x, y]."""
+        return await self.send_command(2, 50, params=[{"m": "a", "p": 0, "o": 107, "d": {"point": point}}])
+
+    # ── work history ──────────────────────────────────────────────────────
+    async def get_history(self, limit: int = 15) -> list[dict]:
+        """Recent mowing sessions from the work-record API."""
+        did = await self.get_did()
+        now = int(time.time())
+        body = {
+            "did": did, "uid": self.uid, "key": "4.1", "type": 3,
+            "time_start": now - 180 * 86400, "time_end": now,
+            "limit": limit, "from": now - 180 * 86400,
+            "siid": "4", "eiid": "1", "region": self.region,
+        }
+        res = await self._mower_api("/dreame-user-iot/iotstatus/history", body)
+        sessions = ((res or {}).get("data") or {}).get("list") or []
+        out = []
+        for sess in sessions:
+            try:
+                props = {p["piid"]: p["value"] for p in json.loads(sess.get("history") or "[]")}
+            except (json.JSONDecodeError, KeyError, TypeError):
+                continue
+            out.append({
+                "timestamp": props.get(8, 0),
+                "area": props.get(2, 0),
+                "duration": (props.get(3, 0) or 0) // 60,
+                "battery": props.get(1, 0),
+                "map_path": props.get(9, ""),
+            })
+        return out
+
     # ── maps ────────────────────────────────────────────────────────────
     async def get_map_list(self) -> list[dict]:
         """MAPL — sent with NO d field, else the robot returns only the current map."""

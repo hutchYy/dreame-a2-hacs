@@ -1,0 +1,74 @@
+mow_zones:
+  name: Mow zones
+  description: Mow specific zones of the active map by their zone IDs.
+  target:
+    entity:
+      integration: dreame_a2
+      domain: lawn_mower
+  fields:
+    zones:
+      name: Zone IDs
+      description: List of zone IDs to mow (see the "Zones" sensor attributes).
+      required: true
+      example: "[0, 2]"
+      selector:
+        object:
+
+mow_spot:
+  name: Spot mow
+  description: Spot-mow a defined area (advanced; area coordinates in map units).
+  target:
+    entity:
+      integration: dreame_a2
+      domain: lawn_mower
+  fields:
+    area:
+      name: Area
+      description: Spot area coordinates.
+      required: true
+      example: "[100, 200, 300, 400]"
+      selector:
+        object:
+
+patrol_zone_edges:
+  name: Patrol zone edges
+  description: >
+    Cruise (patrol) along the boundary of the given zones. The edge path is
+    built from the active map's zone outlines.
+  target:
+    entity:
+      integration: dreame_a2
+      domain: lawn_mower
+  fields:
+    zones:
+      name: Zone IDs
+      description: Zones whose boundaries to patrol (see the "Zones" sensor).
+      required: true
+      example: "[0]"
+      selector:
+        object:
+
+patrol_point:
+  name: Patrol point
+  description: Send the robot to patrol a single point (map coordinates).
+  target:
+    entity:
+      integration: dreame_a2
+      domain: lawn_mower
+  fields:
+    x:
+      name: X
+      description: X coordinate in map units.
+      required: true
+      example: 100
+      selector:
+        number:
+          mode: box
+    y:
+      name: Y
+      description: Y coordinate in map units.
+      required: true
+      example: -200
+      selector:
+        number:
+          mode: box
