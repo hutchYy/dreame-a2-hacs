@@ -399,6 +399,41 @@ class DreameApi:
     async def get_dock_pos(self) -> Any:
         return extract_out_d(await self.raw_command({"siid": 2, "aiid": 50, "in": [{"m": "g", "t": "DOCK", "d": {}}]}))
 
+    async def fetch_mowing_trail(self, max_chunks: int = 200) -> list[list[int]]:
+        """The actual mown path via MITRC. 5 bytes/point, 20-bit signed x/y.
+
+        Params use point-offset semantics ({idx: startPoint, size: count}); the
+        robot returns ~60 points per call. Stops at the end of the trail (a short
+        or empty chunk) or once max_chunks is hit, to bound cloud load.
+        """
+        import base64
+
+        points: list[list[int]] = []
+        chunk_pts = 60
+        for i in range(max_chunks):
+            res = await self.raw_command(
+                {"siid": 2, "aiid": 50, "in": [{"m": "g", "t": "MITRC", "d": {"idx": i * chunk_pts, "size": chunk_pts}}]}
+            )
+            d = extract_out_d(res)
+            track = d.get("track") if isinstance(d, dict) else None
+            if not isinstance(track, str) or not track:
+                break
+            raw = base64.b64decode(track)
+            if not raw or len(raw) % 5 != 0:
+                break
+            n = 0
+            for j in range(0, len(raw), 5):
+                b = raw[j:j + 5]
+                xr = ((b[2] << 28) | (b[1] << 20) | (b[0] << 12)) & 0xFFFFFFFF
+                xr = xr - 0x100000000 if xr & 0x80000000 else xr
+                yr = ((b[4] << 24) | (b[3] << 16) | (b[2] << 8)) & 0xFFFFFFFF
+                yr = yr - 0x100000000 if yr & 0x80000000 else yr
+                points.append([xr >> 12, yr >> 12])
+                n += 1
+            if n < chunk_pts:
+                break
+        return points
+
     async def get_robot_pose(self) -> dict | None:
         res = await self.get_properties([{"siid": 1, "piid": 4}])
         try:
@@ -446,6 +481,17 @@ class DreameApi:
         return await self.send_command(2, 50, d_array=d)
 
     # ── device settings (type codes) ─────────────────────────────────────
+    async def get_consumables(self) -> list[int]:
+        """CMS → [blade_used_min, brush_used_min, maintenance_used_min]."""
+        d = extract_out_d(await self.raw_command({"siid": 2, "aiid": 50, "in": [{"m": "g", "t": "CMS", "d": {}}]}))
+        v = d.get("value") if isinstance(d, dict) else None
+        return v if isinstance(v, list) else []
+
+    async def get_totals(self) -> dict:
+        """Lifetime totals (MIHIS): {area m², count sessions, start epoch, time min}."""
+        d = extract_out_d(await self.raw_command({"siid": 2, "aiid": 50, "in": [{"m": "g", "t": "MIHIS", "d": {}}]}))
+        return d if isinstance(d, dict) else {}
+
     async def get_cfg(self) -> dict:
         res = await self.raw_command({"siid": 2, "aiid": 50, "in": [{"m": "g", "t": "CFG"}]})
         d = extract_out_d(res)

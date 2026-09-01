@@ -1,39 +1,33 @@
-# Dreame A2 — Lovelace dashboard (built-in cards only, no custom cards).
+# Dreame A2 — multi-view dashboard mirroring the web app (Dashboard / Map /
+# Settings / Maintenance). Built-in cards only, no custom cards.
 #
 # HOW TO USE
 #   Settings → Dashboards → (open one) → ⋮ → Edit → ⋮ → "Raw configuration
-#   editor", then paste ONE of the `views:` entries below, OR paste the whole
-#   file as a new dashboard.
+#   editor", then paste this whole file.
 #
-# IMPORTANT: entity IDs are built from your mower's device name. This template
-# assumes the prefix `a2_1200` (e.g. `lawn_mower.a2_1200`). Replace `a2_1200`
-# with your prefix — check Developer Tools → States and filter for your mower.
+# IMPORTANT: entity IDs come from your mower's device name. This template
+# assumes the prefix `a2_1200` (e.g. `lawn_mower.a2_1200`). Find-replace
+# `a2_1200` with your prefix (Developer Tools → States, filter for the mower).
 
 title: Mower
 views:
-  - title: Lawn
+  # ── DASHBOARD ─────────────────────────────────────────────────────────────
+  - title: Dashboard
+    path: dashboard
+    icon: mdi:robot-mower
     type: sections
     max_columns: 2
     sections:
-      # ── Map + primary controls ──────────────────────────────────────────
       - type: grid
         cards:
-          - type: picture-entity
-            entity: camera.a2_1200_map
-            name: Lawn map
-            camera_view: auto
-            show_state: false
-            show_name: true
-
+          - type: heading
+            heading: Status
           - type: tile
             entity: lawn_mower.a2_1200
             name: Mower
             features:
               - type: lawn-mower-commands
-                commands:
-                  - start_pause
-                  - dock
-
+                commands: [start_pause, dock]
           - type: horizontal-stack
             cards:
               - type: tile
@@ -42,23 +36,17 @@ views:
               - type: tile
                 entity: sensor.a2_1200_state
                 name: State
-
           - type: horizontal-stack
             cards:
               - type: tile
                 entity: button.a2_1200_find_robot
                 name: Find
-                tap_action: { action: toggle }
               - type: tile
                 entity: button.a2_1200_mow_edges
                 name: Edges
               - type: tile
                 entity: button.a2_1200_stop
                 name: Stop
-              - type: tile
-                entity: button.a2_1200_refresh_map
-                name: Refresh
-
           - type: entities
             title: This session
             entities:
@@ -74,15 +62,63 @@ views:
                 name: Charging
               - entity: binary_sensor.a2_1200_problem
                 name: Problem
-
-      # ── Mowing + device settings ────────────────────────────────────────
       - type: grid
         cards:
-          - type: entities
-            title: Mowing
-            entities:
-              - entity: select.a2_1200_active_map
+          - type: heading
+            heading: Live map
+          - type: picture-entity
+            entity: camera.a2_1200_map
+            name: Lawn
+            camera_view: live
+            show_state: false
+            show_name: false
+          - type: tile
+            entity: button.a2_1200_refresh_map
+            name: Refresh map
+
+  # ── MAP ───────────────────────────────────────────────────────────────────
+  - title: Map
+    path: map
+    icon: mdi:map
+    type: sections
+    max_columns: 2
+    sections:
+      - type: grid
+        column_span: 2
+        cards:
+          - type: picture-entity
+            entity: camera.a2_1200_map
+            name: Lawn map
+            camera_view: live
+            show_state: false
+            show_name: true
+          - type: horizontal-stack
+            cards:
+              - type: tile
+                entity: select.a2_1200_active_map
                 name: Active map
+              - type: tile
+                entity: button.a2_1200_refresh_map
+                name: Refresh
+          - type: markdown
+            content: >
+              Green = lawn zone · **Yellow = mown path** · Red dot = mower
+              (sits on the dock when idle, follows live position while mowing) ·
+              Cyan = dock.
+
+  # ── SETTINGS ───────────────────────────────────────────────────────────────
+  - title: Settings
+    path: settings
+    icon: mdi:cog
+    type: sections
+    max_columns: 3
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: Mowing
+          - type: entities
+            entities:
               - entity: number.a2_1200_cutting_height
                 name: Cutting height
               - entity: select.a2_1200_cutting_pattern
@@ -96,9 +132,11 @@ views:
                 name: Safe edge mowing
               - entity: switch.a2_1200_edgemaster
                 name: EdgeMaster
-
+      - type: grid
+        cards:
+          - type: heading
+            heading: Obstacle avoidance
           - type: entities
-            title: Obstacle avoidance
             entities:
               - entity: switch.a2_1200_lidar_obstacle_recognition
                 name: LiDAR recognition
@@ -112,9 +150,11 @@ views:
                 name: AI obstacle photos
               - entity: select.a2_1200_navigation_path
                 name: Navigation path
-
+      - type: grid
+        cards:
+          - type: heading
+            heading: Device
           - type: entities
-            title: Device
             entities:
               - entity: number.a2_1200_volume
                 name: Volume
@@ -130,3 +170,60 @@ views:
                 name: Daytime lights
               - entity: switch.a2_1200_auto_recharge_after_standby
                 name: Auto recharge after standby
+
+  # ── MAINTENANCE ──────────────────────────────────────────────────────────────
+  - title: Maintenance
+    path: maintenance
+    icon: mdi:wrench
+    type: sections
+    max_columns: 2
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: Consumables (life remaining)
+          - type: horizontal-stack
+            cards:
+              - type: gauge
+                entity: sensor.a2_1200_blade_life
+                name: Blades
+                unit: "%"
+                needle: true
+                severity: { green: 40, yellow: 15, red: 0 }
+              - type: gauge
+                entity: sensor.a2_1200_brush_life
+                name: Side brush
+                unit: "%"
+                needle: true
+                severity: { green: 40, yellow: 15, red: 0 }
+              - type: gauge
+                entity: sensor.a2_1200_maintenance_life
+                name: Maintenance
+                unit: "%"
+                needle: true
+                severity: { green: 40, yellow: 15, red: 0 }
+      - type: grid
+        cards:
+          - type: heading
+            heading: Lifetime statistics
+          - type: horizontal-stack
+            cards:
+              - type: tile
+                entity: sensor.a2_1200_lifetime_area
+                name: Total area
+              - type: tile
+                entity: sensor.a2_1200_lifetime_time
+                name: Total time
+              - type: tile
+                entity: sensor.a2_1200_session_count
+                name: Sessions
+          - type: entities
+            entities:
+              - entity: sensor.a2_1200_in_service_since
+                name: In service since
+          - type: history-graph
+            title: Battery (7 days)
+            hours_to_show: 168
+            entities:
+              - entity: sensor.a2_1200_battery
+                name: Battery

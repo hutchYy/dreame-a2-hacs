@@ -58,5 +58,9 @@ PARAMS_MAP = {
 
 DEFAULT_D = [0, 0, 0, 0, 60, 0, 102, 1, 1, 1, 1, 1, 1, 15, 20, 7, 1, 2]
 
+# Consumable max life in minutes (RN plugin ConsumableItem). CMS returns used
+# minutes; remaining % = 100 - used/max*100.
+CONSUMABLE_MAX = {"blade": 6000, "brush": 30000, "maintenance": 3600}
+
 MANUFACTURER = "Dreame"
 MODEL_NAME = "A2 Robot Mower (G2568A)"

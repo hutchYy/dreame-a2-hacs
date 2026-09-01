@@ -27,6 +27,7 @@ ZONE_COLORS = [
 BG = (10, 13, 18)
 DOCK_COLOR = (76, 201, 240)
 ROBOT_COLOR = (255, 87, 51)
+TRAIL_COLOR = (255, 214, 10)   # the mown path (bright)
 TRAJ_COLOR = (247, 37, 133)
 
 
@@ -55,18 +56,20 @@ class DreameMapCamera(DreameEntity, Camera):
         if not map_data:
             return None
         pose = data.get("pose")
-        key = (self.coordinator._map_ts, tuple(pose.values()) if pose else None, data.get("active_map"))
+        trail = data.get("trail")
+        key = (self.coordinator._map_ts, tuple(pose.values()) if pose else None,
+               data.get("active_map"), len(trail) if trail else 0)
         if key == self._cache_key and self._cache_png is not None:
             return self._cache_png
         png = await self.hass.async_add_executor_job(
-            _render, map_data, data.get("dock"), pose
+            _render, map_data, data.get("dock"), pose, trail
         )
         self._cache_key = key
         self._cache_png = png
         return png
 
 
-def _render(map_data: dict, dock, pose) -> bytes | None:
+def _render(map_data: dict, dock, pose, trail=None) -> bytes | None:
     from PIL import Image, ImageDraw  # imported lazily; ships with HA
 
     zones = [z for z in map_data.get("map", []) if z.get("type") == 0 and z.get("data")]
@@ -107,14 +110,31 @@ def _render(map_data: dict, dock, pose) -> bytes | None:
         label = z.get("name") or f"Zone {z.get('id', i)}"
         d.text((cx, cy), label, fill=(255, 255, 255, 220), anchor="mm")
 
-    # Trajectory
+    # Mown trail (MITRC). Split into segments at pen-up sentinels
+    # (|coord| >= 32000, e.g. [32767, -32768]) which mark discontinuities.
+    def _is_sentinel(p) -> bool:
+        return abs(p[0]) >= 32000 or abs(p[1]) >= 32000 or p[0] == INT_MAX
+
+    if trail:
+        seg: list[tuple[float, float]] = []
+        for p in trail:
+            if _is_sentinel(p):
+                if len(seg) >= 2:
+                    d.line(seg, fill=TRAIL_COLOR + (230,), width=3, joint="curve")
+                seg = []
+            else:
+                seg.append((sx(p[0]), sy(p[1])))
+        if len(seg) >= 2:
+            d.line(seg, fill=TRAIL_COLOR + (230,), width=3, joint="curve")
+
+    # Inter-zone transitions from the map JSON (faint; not the mown path)
     for traj in map_data.get("trajectory", []) or []:
         line = traj.get("data") if isinstance(traj, dict) else None
         if not line:
             continue
-        seg = [(sx(p[0]), sy(p[1])) for p in line if p and p[0] != INT_MAX]
-        if len(seg) >= 2:
-            d.line(seg, fill=TRAJ_COLOR + (110,), width=2)
+        s2 = [(sx(p[0]), sy(p[1])) for p in line if p and p[0] != INT_MAX]
+        if len(s2) >= 2:
+            d.line(s2, fill=TRAJ_COLOR + (90,), width=1)
 
     # Dock
     dpt = None
@@ -127,12 +147,18 @@ def _render(map_data: dict, dock, pose) -> bytes | None:
         d.rectangle([x - 9, y - 6, x + 9, y + 6], fill=DOCK_COLOR + (255,))
         d.text((x, y - 16), "DOCK", fill=DOCK_COLOR + (255,), anchor="mm")
 
-    # Robot pose
+    # Robot position: live pose if moving, else fall back to the dock so the
+    # mower is always shown on the map (it's sitting on the dock when idle).
+    rx = ry = None
+    ang = 0.0
     if pose and pose.get("x") is not None:
-        x, y = sx(pose["x"]), sy(pose["y"])
-        d.ellipse([x - 8, y - 8, x + 8, y + 8], fill=ROBOT_COLOR + (255,), outline=(255, 255, 255, 255))
-        ang = math.radians(pose.get("angle") or 0)
-        d.line([(x, y), (x + 16 * math.cos(ang), y - 16 * math.sin(ang))], fill=(255, 255, 255, 255), width=2)
+        rx, ry, ang = pose["x"], pose["y"], math.radians(pose.get("angle") or 0)
+    elif dpt and dpt[0] is not None:
+        rx, ry = dpt
+    if rx is not None:
+        x, y = sx(rx), sy(ry)
+        d.ellipse([x - 9, y - 9, x + 9, y + 9], fill=ROBOT_COLOR + (255,), outline=(255, 255, 255, 255))
+        d.line([(x, y), (x + 18 * math.cos(ang), y - 18 * math.sin(ang))], fill=(255, 255, 255, 255), width=2)
 
     buf = io.BytesIO()
     img.save(buf, format="PNG")

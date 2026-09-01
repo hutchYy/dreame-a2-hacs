@@ -35,7 +35,14 @@
       },
       "area_mowed": { "name": "Area mowed" },
       "area_total": { "name": "Area total" },
-      "session_time": { "name": "Session time" }
+      "session_time": { "name": "Session time" },
+      "lifetime_area": { "name": "Lifetime area mowed" },
+      "lifetime_time": { "name": "Lifetime mowing time" },
+      "session_count": { "name": "Lifetime sessions" },
+      "in_service_since": { "name": "In service since" },
+      "blade_life": { "name": "Blade life remaining" },
+      "brush_life": { "name": "Side brush life remaining" },
+      "maintenance_life": { "name": "Maintenance life remaining" }
     },
     "binary_sensor": {
       "online": { "name": "Online" },

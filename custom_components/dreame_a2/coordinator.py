@@ -31,6 +31,7 @@ class DreameCoordinator(DataUpdateCoordinator[dict]):
         self._map: dict | None = None
         self._dock = None
         self._pose = None
+        self._trail: list | None = None
 
     async def _async_update_data(self) -> dict:
         try:
@@ -45,6 +46,8 @@ class DreameCoordinator(DataUpdateCoordinator[dict]):
             settings = {n: d[p] for n, p in PARAMS_MAP.items() if d and p < len(d)}
 
             cfg = await self.api.get_cfg()
+            totals = await self.api.get_totals()
+            consumables = await self.api.get_consumables()
 
             # Robot pose is cheap and useful while active; refresh every cycle.
             try:
@@ -58,6 +61,9 @@ class DreameCoordinator(DataUpdateCoordinator[dict]):
                 try:
                     self._map = await self.api.fetch_map_data()
                     self._dock = await self.api.get_dock_pos()
+                    # The mown path (MITRC). Bounded chunk count keeps the
+                    # serialized command queue from stalling on huge lawns.
+                    self._trail = await self.api.fetch_mowing_trail(max_chunks=200)
                     self._map_ts = now
                 except DreameError as err:
                     _LOGGER.debug("Map refresh failed: %s", err)
@@ -66,11 +72,14 @@ class DreameCoordinator(DataUpdateCoordinator[dict]):
                 "status": status,
                 "settings": settings,
                 "cfg": cfg,
+                "totals": totals,
+                "consumables": consumables,
                 "maps": maps,
                 "active_map": active_idx,
                 "map": self._map,
                 "dock": self._dock,
                 "pose": self._pose,
+                "trail": self._trail,
             }
         except DreameError as err:
             raise UpdateFailed(str(err)) from err

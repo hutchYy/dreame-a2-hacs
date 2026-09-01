@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import datetime, timezone
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -15,8 +16,20 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import DreameConfigEntry
-from .const import STATE_LABELS
+from .const import CONSUMABLE_MAX, STATE_LABELS
 from .entity import DreameEntity
+
+
+def _consumable_pct(data: dict, index: int, max_min: int):
+    used = data.get("consumables") or []
+    if index >= len(used):
+        return None
+    return max(0, min(100, round(100 - used[index] / max_min * 100)))
+
+
+def _since(data: dict):
+    start = (data.get("totals") or {}).get("start")
+    return datetime.fromtimestamp(start, tz=timezone.utc) if start else None
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -52,6 +65,44 @@ SENSORS: tuple[DreameSensorDescription, ...] = (
         native_unit_of_measurement=UnitOfTime.MINUTES,
         device_class=SensorDeviceClass.DURATION,
         value_fn=lambda d: d.get("status", {}).get("time_elapsed"),
+    ),
+    DreameSensorDescription(
+        key="lifetime_area", translation_key="lifetime_area",
+        native_unit_of_measurement=UnitOfArea.SQUARE_METERS,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        value_fn=lambda d: (d.get("totals") or {}).get("area"),
+    ),
+    DreameSensorDescription(
+        key="lifetime_time", translation_key="lifetime_time",
+        native_unit_of_measurement=UnitOfTime.MINUTES,
+        device_class=SensorDeviceClass.DURATION,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        value_fn=lambda d: (d.get("totals") or {}).get("time"),
+    ),
+    DreameSensorDescription(
+        key="session_count", translation_key="session_count",
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        value_fn=lambda d: (d.get("totals") or {}).get("count"),
+    ),
+    DreameSensorDescription(
+        key="in_service_since", translation_key="in_service_since",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        value_fn=_since,
+    ),
+    DreameSensorDescription(
+        key="blade_life", translation_key="blade_life",
+        native_unit_of_measurement=PERCENTAGE, state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda d: _consumable_pct(d, 0, CONSUMABLE_MAX["blade"]),
+    ),
+    DreameSensorDescription(
+        key="brush_life", translation_key="brush_life",
+        native_unit_of_measurement=PERCENTAGE, state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda d: _consumable_pct(d, 1, CONSUMABLE_MAX["brush"]),
+    ),
+    DreameSensorDescription(
+        key="maintenance_life", translation_key="maintenance_life",
+        native_unit_of_measurement=PERCENTAGE, state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda d: _consumable_pct(d, 2, CONSUMABLE_MAX["maintenance"]),
     ),
 )
 
