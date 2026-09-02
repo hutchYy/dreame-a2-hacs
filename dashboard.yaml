@@ -1,16 +1,21 @@
 # Dreame A2 — Mushroom dashboard (Dashboard / Map / Settings / Maintenance / Patrol)
 #
-# REQUIRES one HACS frontend card:
-#   HACS → search "Mushroom" (lovelace-mushroom) → Download → reload the page.
-# (Everything else is built-in. The map is a rendered image, not a video feed.)
+# FOR THE WEB-APP LOOK & FEEL, install two things from HACS, then reload:
+#   • Frontend → "Mushroom" (lovelace-mushroom)   — the modern cards below
+#   • Frontend → "Graphite" theme (or any dark theme) — dark cards + teal accents
+#     then set it in your Profile (bottom-left avatar) → Theme → Graphite (dark).
+# The map is a rendered image (zones + mown trail + robot + dock), not a video.
+#
+# GRID SYSTEM (how this is laid out):
+#   • Each view is a grid of SECTIONS; `max_columns` = how many sit side by side.
+#   • A section can `column_span` several of those columns (hero map spans 2).
+#   • Each card sizes itself with `grid_options: {columns: full|1-4, rows: N}`
+#     (rows ≈ 56px each) — that's how the map becomes a tall hero.
 #
 # HOW TO USE
-#   Settings → Dashboards → (open one) → ⋮ → Edit → ⋮ → "Raw configuration
-#   editor" → paste this whole file.
-#
-# IMPORTANT: entity IDs come from your mower's device name. This template
-# assumes the prefix `a2_1200` (e.g. `lawn_mower.a2_1200`). Find-replace
-# `a2_1200` with your prefix (Developer Tools → States, filter for the mower).
+#   Settings → Dashboards → open one → ⋮ Edit → ⋮ → Raw configuration editor →
+#   paste this whole file. Then find-replace the `a2_1200` entity prefix with
+#   your mower's (Developer Tools → States, filter for the mower).
 
 title: Mower
 views:
@@ -19,9 +24,9 @@ views:
     path: dashboard
     icon: mdi:robot-mower
     type: sections
-    max_columns: 2
+    max_columns: 3
     sections:
-      # Hero: status chips + big map (full width)
+      # Overview — spans 2 of 3 columns: status chips + large hero map
       - type: grid
         column_span: 2
         cards:
@@ -38,26 +43,31 @@ views:
                 entity: sensor.a2_1200_session_time
                 icon: mdi:timer-outline
               - type: entity
-                entity: binary_sensor.a2_1200_online
+                entity: sensor.a2_1200_area_mowed
+                icon: mdi:grass
               - type: entity
                 entity: binary_sensor.a2_1200_problem
+            grid_options: { columns: full }
           - type: picture-entity
             entity: camera.a2_1200_map
             camera_view: live
             show_state: false
             show_name: false
             tap_action: { action: none }
-      # Controls
+            grid_options: { columns: full, rows: 8 }
+      # Controls — the remaining column
       - type: grid
         cards:
           - type: custom:mushroom-title-card
             title: Controls
+            grid_options: { columns: full }
           - type: tile
             entity: lawn_mower.a2_1200
             name: Mower
             features:
               - type: lawn-mower-commands
                 commands: [start_pause, dock]
+            grid_options: { columns: full }
           - type: custom:mushroom-chips-card
             alignment: justify
             chips:
@@ -87,36 +97,34 @@ views:
                   target: { entity_id: button.a2_1200_find_robot }
               - type: template
                 icon: mdi:refresh
-                content: Refresh
+                content: Map
                 tap_action:
                   action: call-service
                   service: button.press
                   target: { entity_id: button.a2_1200_refresh_map }
-      # This session
-      - type: grid
-        cards:
-          - type: custom:mushroom-title-card
-            title: This session
-          - type: custom:mushroom-entity-card
-            entity: sensor.a2_1200_area_mowed
-            name: Area mowed
-            icon: mdi:grass
-            icon_color: green
+            grid_options: { columns: full }
           - type: custom:mushroom-entity-card
             entity: sensor.a2_1200_area_total
             name: Area total
             icon: mdi:vector-square
+            grid_options: { columns: full }
           - type: custom:mushroom-entity-card
             entity: binary_sensor.a2_1200_charging
             name: Charging
             icon: mdi:power-plug
+            grid_options: { columns: full }
+          - type: custom:mushroom-entity-card
+            entity: binary_sensor.a2_1200_online
+            name: Online
+            icon: mdi:wifi
+            grid_options: { columns: full }
 
   # ── MAP ───────────────────────────────────────────────────────────────────
   - title: Map
     path: map
     icon: mdi:map
     type: sections
-    max_columns: 2
+    max_columns: 3
     sections:
       - type: grid
         column_span: 2
@@ -127,6 +135,7 @@ views:
             show_state: false
             show_name: false
             tap_action: { action: none }
+            grid_options: { columns: full, rows: 10 }
           - type: custom:mushroom-chips-card
             alignment: center
             chips:
@@ -140,19 +149,27 @@ views:
                   action: call-service
                   service: button.press
                   target: { entity_id: button.a2_1200_refresh_map }
-          - type: markdown
-            content: >
-              **Green** lawn · **Yellow** mown path · **Red** mower · **Cyan** dock.
+            grid_options: { columns: full }
       - type: grid
         cards:
           - type: custom:mushroom-title-card
+            title: Legend
+            grid_options: { columns: full }
+          - type: markdown
+            content: >
+              **Green** lawn · **Yellow** mown path · **Red** mower ·
+              **Cyan** dock.
+            grid_options: { columns: full }
+          - type: custom:mushroom-title-card
             title: Zones
             subtitle: Mow with the lawn_mower.mow_zones action
+            grid_options: { columns: full }
           - type: markdown
             content: |
               {% for z in state_attr('sensor.a2_1200_zones','zones') or [] %}
               - **{{ z.name }}** (id `{{ z.id }}`){% if z.area_m2 %} — {{ z.area_m2 }} m²{% endif %}
               {% endfor %}
+            grid_options: { columns: full }
 
   # ── SETTINGS ───────────────────────────────────────────────────────────────
   - title: Settings
@@ -165,71 +182,93 @@ views:
         cards:
           - type: custom:mushroom-title-card
             title: Mowing
+            grid_options: { columns: full }
           - type: custom:mushroom-number-card
             entity: number.a2_1200_cutting_height
             display_mode: slider
             icon_color: green
+            grid_options: { columns: full }
           - type: custom:mushroom-select-card
             entity: select.a2_1200_cutting_pattern
+            grid_options: { columns: full }
           - type: custom:mushroom-entity-card
             entity: switch.a2_1200_efficient_mode
             tap_action: { action: toggle }
+            grid_options: { columns: full }
           - type: custom:mushroom-entity-card
             entity: switch.a2_1200_automatic_edge_mowing
             tap_action: { action: toggle }
+            grid_options: { columns: full }
           - type: custom:mushroom-entity-card
             entity: switch.a2_1200_safe_edge_mowing
             tap_action: { action: toggle }
+            grid_options: { columns: full }
           - type: custom:mushroom-entity-card
             entity: switch.a2_1200_edgemaster
             tap_action: { action: toggle }
+            grid_options: { columns: full }
       - type: grid
         cards:
           - type: custom:mushroom-title-card
             title: Obstacle avoidance
+            grid_options: { columns: full }
           - type: custom:mushroom-entity-card
             entity: switch.a2_1200_lidar_obstacle_recognition
             tap_action: { action: toggle }
+            grid_options: { columns: full }
           - type: custom:mushroom-entity-card
             entity: switch.a2_1200_edge_obstacle_avoidance
             tap_action: { action: toggle }
+            grid_options: { columns: full }
           - type: custom:mushroom-number-card
             entity: number.a2_1200_min_obstacle_height
             display_mode: slider
+            grid_options: { columns: full }
           - type: custom:mushroom-number-card
             entity: number.a2_1200_obstacle_keep_distance
             display_mode: slider
+            grid_options: { columns: full }
           - type: custom:mushroom-entity-card
             entity: switch.a2_1200_ai_obstacle_photos
             tap_action: { action: toggle }
+            grid_options: { columns: full }
           - type: custom:mushroom-select-card
             entity: select.a2_1200_navigation_path
+            grid_options: { columns: full }
       - type: grid
         cards:
           - type: custom:mushroom-title-card
             title: Device
+            grid_options: { columns: full }
           - type: custom:mushroom-number-card
             entity: number.a2_1200_volume
             display_mode: slider
             icon_color: indigo
+            grid_options: { columns: full }
           - type: custom:mushroom-entity-card
             entity: switch.a2_1200_frost_protection
             tap_action: { action: toggle }
+            grid_options: { columns: full }
           - type: custom:mushroom-entity-card
             entity: switch.a2_1200_weather_adaptation
             tap_action: { action: toggle }
+            grid_options: { columns: full }
           - type: custom:mushroom-entity-card
             entity: switch.a2_1200_pathway_obstacle_avoidance
             tap_action: { action: toggle }
+            grid_options: { columns: full }
           - type: custom:mushroom-entity-card
             entity: switch.a2_1200_child_lock
             tap_action: { action: toggle }
+            grid_options: { columns: full }
           - type: custom:mushroom-entity-card
             entity: switch.a2_1200_daytime_lights
             tap_action: { action: toggle }
+            grid_options: { columns: full }
           - type: custom:mushroom-entity-card
             entity: switch.a2_1200_auto_recharge_after_standby
             tap_action: { action: toggle }
+            grid_options: { columns: full }
 
   # ── MAINTENANCE ──────────────────────────────────────────────────────────────
   - title: Maintenance
@@ -243,7 +282,9 @@ views:
           - type: custom:mushroom-title-card
             title: Consumables
             subtitle: Life remaining
+            grid_options: { columns: full }
           - type: horizontal-stack
+            grid_options: { columns: full }
             cards:
               - type: gauge
                 entity: sensor.a2_1200_blade_life
@@ -264,6 +305,7 @@ views:
         cards:
           - type: custom:mushroom-title-card
             title: Lifetime
+            grid_options: { columns: full }
           - type: custom:mushroom-chips-card
             chips:
               - type: entity
@@ -275,33 +317,38 @@ views:
               - type: entity
                 entity: sensor.a2_1200_session_count
                 icon: mdi:counter
+            grid_options: { columns: full }
           - type: custom:mushroom-entity-card
             entity: sensor.a2_1200_last_mow
             name: Last mow
             icon: mdi:history
+            grid_options: { columns: full }
           - type: custom:mushroom-entity-card
             entity: sensor.a2_1200_in_service_since
             name: In service since
             icon: mdi:calendar-start
+            grid_options: { columns: full }
           - type: markdown
             content: |
               **Recent sessions**
               {% for s in state_attr('sensor.a2_1200_last_mow','recent_sessions') or [] %}
               - {{ s.area_m2 }} m² · {{ s.duration_min }} min
               {% endfor %}
+            grid_options: { columns: full }
           - type: history-graph
             title: Battery (7 days)
             hours_to_show: 168
             entities:
               - entity: sensor.a2_1200_battery
                 name: Battery
+            grid_options: { columns: full }
 
   # ── PATROL ────────────────────────────────────────────────────────────────
   - title: Patrol
     path: patrol
     icon: mdi:security
     type: sections
-    max_columns: 2
+    max_columns: 3
     sections:
       - type: grid
         column_span: 2
@@ -312,6 +359,7 @@ views:
             show_state: false
             show_name: false
             tap_action: { action: none }
+            grid_options: { columns: full, rows: 8 }
           - type: custom:mushroom-chips-card
             alignment: justify
             chips:
@@ -331,21 +379,23 @@ views:
                   action: call-service
                   service: button.press
                   target: { entity_id: button.a2_1200_find_robot }
+            grid_options: { columns: full }
       - type: grid
         cards:
           - type: custom:mushroom-title-card
             title: Run a patrol
-            subtitle: Cruise chosen zone edges or a point
+            subtitle: Cruise zone edges or a point
+            grid_options: { columns: full }
           - type: markdown
             content: |
-              **Zones available:**
+              **Zones:**
               {% for z in state_attr('sensor.a2_1200_zones','zones') or [] %}
               - **{{ z.name }}** (id `{{ z.id }}`)
               {% endfor %}
 
               - **Edge patrol** — action `lawn_mower.patrol_zone_edges`,
-                target your mower, `zones: [0]`.
-              - **Point patrol** — action `lawn_mower.patrol_point`,
-                `x: <n>`, `y: <n>`.
+                target the mower, `zones: [0]`.
+              - **Point patrol** — action `lawn_mower.patrol_point`, `x`, `y`.
 
-              Tip: wrap either in a Script helper for a one-tap button.
+              Tip: wrap either in a Script for a one-tap button.
+            grid_options: { columns: full }
