@@ -38,13 +38,22 @@ needs no external service.
 Copy `custom_components/dreame_a2/` into your HA `config/custom_components/`,
 restart, then add the integration as above.
 
-## The map card
+## Dashboard
 
-Add a Picture Entity (or Picture Glance) card pointing at the camera:
+A ready-made 5-view dashboard (Dashboard / Map / Settings / Maintenance /
+Patrol) is in [`dashboard.yaml`](dashboard.yaml). It uses the **Mushroom** card
+set for a clean look:
+
+1. HACS → search **Mushroom** (`lovelace-mushroom`) → Download → reload.
+2. Settings → Dashboards → open one → ⋮ → Edit → ⋮ → **Raw configuration
+   editor** → paste `dashboard.yaml`.
+3. Find-replace the `a2_1200` entity prefix with your mower's.
+
+Just want the map? A plain Picture Entity works with no custom cards:
 
 ```yaml
 type: picture-entity
-entity: camera.dreame_a2_map
+entity: camera.dreame_a2_map   # the rendered map (zones + mown trail + robot + dock)
 camera_view: auto
 name: Lawn
 ```
