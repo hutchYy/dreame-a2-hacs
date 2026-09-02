@@ -9,7 +9,6 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
-import ssl
 import time
 from typing import Any
 from urllib.parse import quote
@@ -114,15 +113,12 @@ class DreameApi:
         self.did = did
         self.model = model
         self._lock = asyncio.Lock()  # serializes robot commands (cloud relay)
-        self._ssl = ssl.create_default_context()
-        self._ssl.check_hostname = False
-        self._ssl.verify_mode = ssl.CERT_NONE
 
     # ── low-level HTTP ────────────────────────────────────────────────────
     async def _request(self, method: str, url: str, *, headers: dict, data: Any = None) -> Any:
         try:
             async with self._session.request(
-                method, url, headers=headers, data=data, ssl=self._ssl,
+                method, url, headers=headers, data=data, ssl=False,
                 timeout=aiohttp.ClientTimeout(total=20),
             ) as resp:
                 text = await resp.text()
